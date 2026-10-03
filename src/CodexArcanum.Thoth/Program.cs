@@ -1,4 +1,6 @@
-﻿var caminhoArgument = new Argument<string?>("caminho")
+﻿using CodexArcanum.Thoth.Commands;
+
+var caminhoArgument = new Argument<string?>("caminho")
 {
     Description = "Caminho opcional para a solução, projeto ou arquivos"
 };
@@ -7,32 +9,32 @@ var indexarCommand = new Command("indexar", "Indexa a solução/projeto/arquivos
 {
     caminhoArgument
 };
-indexarCommand.SetAction((parseResult) =>
+indexarCommand.SetAction(async (parseResult) =>
 {
     var caminho = parseResult.GetValue(caminhoArgument);
     Console.WriteLine($"Indexando: {caminho ?? "auto-detect"}");
-    // TODO: Implementar lógica de indexação via Smaragdus
+    return await IndexarCommandHandler.HandleAsync(caminho, parseResult);
 });
 
 var orfaosCommand = new Command("orfaos", "Lista arquivos presentes no índice mas ausentes no disco (Isfet por ausência)");
 orfaosCommand.SetAction((parseResult) =>
 {
     Console.WriteLine("Verificando arquivos órfãos...");
-    // TODO: Implementar lógica de órfãos via Smaragdus
+    return Task.FromResult(0);
 });
 
 var desatualizadosCommand = new Command("desatualizados", "Lista arquivos modificados no disco mas não reindexados (Isfet por divergência)");
 desatualizadosCommand.SetAction((parseResult) =>
 {
     Console.WriteLine("Verificando arquivos desatualizados...");
-    // TODO: Implementar lógica de desatualizados via Smaragdus
+    return Task.FromResult(0);
 });
 
 var corrompidosCommand = new Command("corrompidos", "Lista arquivos com hash diferente do índice (Isfet por inconsistência silenciosa)");
 corrompidosCommand.SetAction((parseResult) =>
 {
     Console.WriteLine("Verificando arquivos corrompidos...");
-    // TODO: Implementar lógica de corrompidos via Smaragdus
+    return Task.FromResult(0);
 });
 
 var rootCommand = new RootCommand("Codex Arcanum Thoth - CLI de indexação e diagnóstico de codebase .NET")
