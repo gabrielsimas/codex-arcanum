@@ -63,4 +63,34 @@ public class RoslynParserTests
         Assert.NotEmpty(result.Symbols); // SyntaxTree ainda extrai o básico
     }
 
+    [Fact]
+    public void Parse_SealedRecord_ShouldExtractAsRecordKindWithPrimaryConstructorParameters()
+    {
+        const string code = @"
+namespace MyApp.DTOs
+{
+    /// <summary>Request to create a user</summary>
+    public sealed record CreateUserRequest(string Name, int Age);
+}";
+        var result = _parser.Parse("src/CreateUserRequest.cs", code);
+
+        Assert.Equal("Success", result.Status);
+
+        var recordSymbol = Assert.Single(result.Symbols.Where(s => s.Kind == "Record"));
+        Assert.Equal("CreateUserRequest", recordSymbol.Name);
+        Assert.Equal("MyApp.DTOs.CreateUserRequest", recordSymbol.FullName);
+        Assert.Contains("\"public\"", recordSymbol.Modifiers);
+        Assert.Contains("\"sealed\"", recordSymbol.Modifiers);
+        Assert.Contains("Request to create a user", recordSymbol.XmlDoc);
+
+        Assert.Equal(2, result.Parameters.Count);
+        Assert.Equal("Name", result.Parameters[0].Name);
+        Assert.Equal("string", result.Parameters[0].Type);
+        Assert.Equal(0, result.Parameters[0].Position);
+
+        Assert.Equal("Age", result.Parameters[1].Name);
+        Assert.Equal("int", result.Parameters[1].Type);
+        Assert.Equal(1, result.Parameters[1].Position);
+    }
+
 }
