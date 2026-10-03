@@ -22,6 +22,7 @@ public class SymbolRepositoryTests
     public void Dispose()
     {
         _connection.Dispose();
+        SqliteConnection.ClearAllPools();
         if (File.Exists(_dbFile)) File.Delete(_dbFile);
         if (File.Exists($"{_dbFile}-wal")) File.Delete($"{_dbFile}-wal");
         if (File.Exists($"{_dbFile}-shm")) File.Delete($"{_dbFile}-shm");
