@@ -1,6 +1,4 @@
-using CodexArcanum.Smaragdus.Services;
-
-namespace CodexArcanum.Smaragdus.Tests.Tests;
+namespace CodexArcanum.Smaragdus.Tests.Services;
 
 public class IndexingServiceTests : IDisposable
 {
