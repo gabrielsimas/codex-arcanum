@@ -1,21 +1,31 @@
 namespace CodexArcanum.Smaragdus.Tests.Storage;
 
-public class ProjectRepositoryTests
+public class ProjectRepositoryTests : IDisposable
 {
-    private static SqliteConnection CreateTestDatabase()
+    private readonly SqliteConnection _connection;
+    private readonly string _dbFile;
+
+    public ProjectRepositoryTests()
     {
-        var tempDbFile = $"{Guid.NewGuid()}.db";
-        var connection = SqliteConnectionFactory.CreateConnection($"Data Source={tempDbFile};");
-        DatabaseInitializer.Initialize(connection);
-        return connection;
+        _dbFile = Path.Combine(Path.GetTempPath(), $"codex_test_{Guid.NewGuid()}.db");
+        _connection = SqliteConnectionFactory.CreateConnection($"Data Source={_dbFile}");
+        DatabaseInitializer.Initialize(_connection);
+    }
+
+    public void Dispose()
+    {
+        _connection.Dispose();
+        SqliteConnection.ClearAllPools();
+        if (File.Exists(_dbFile)) File.Delete(_dbFile);
+        if (File.Exists($"{_dbFile}-wal")) File.Delete($"{_dbFile}-wal");
+        if (File.Exists($"{_dbFile}-shm")) File.Delete($"{_dbFile}-shm");
     }
 
     [Fact]
     public void Insert_ShouldReturnGeneratedId()
     {
-        using var connection = CreateTestDatabase();
-        var repo = new ProjectRepository(connection);
-        var project = new ProjectModel(0, "MyProject", "src/MyProject/MyProject.csproj", DateTime.UtcNow.ToString("O"));
+        var repo = new ProjectRepository(_connection);
+        var project = new ProjectModel(0, "MyProject", $"src/MyProject/{Guid.NewGuid()}.csproj", DateTime.UtcNow.ToString("O"));
 
         var id = repo.Insert(project);
 
@@ -25,39 +35,34 @@ public class ProjectRepositoryTests
     [Fact]
     public void GetByPath_ShouldReturnProject_WhenExists()
     {
-        using var connection = CreateTestDatabase();
-        var repo = new ProjectRepository(connection);
-        var project = new ProjectModel(0, "MyProject", "src/MyProject/MyProject.csproj", DateTime.UtcNow.ToString("O"));
+        var repo = new ProjectRepository(_connection);
+        var uniquePath = $"src/MyProject/{Guid.NewGuid()}.csproj";
+        var project = new ProjectModel(0, "MyProject", uniquePath, DateTime.UtcNow.ToString("O"));
         repo.Insert(project);
 
-        var result = repo.GetByPath("src/MyProject/MyProject.csproj");
+        var result = repo.GetByPath(uniquePath);
 
         Assert.NotNull(result);
         Assert.Equal("MyProject", result.Name);
-        Assert.Equal("src/MyProject/MyProject.csproj", result.Path);
+        Assert.Equal(uniquePath, result.Path);
     }
 
     [Fact]
     public void GetByPath_ShouldReturnNull_WhenNotExists()
     {
-        using var connection = CreateTestDatabase();
-        var repo = new ProjectRepository(connection);
-
-        var result = repo.GetByPath("nonexistent.csproj");
-
+        var repo = new ProjectRepository(_connection);
+        var result = repo.GetByPath($"src/NonExistent/{Guid.NewGuid()}.csproj");
         Assert.Null(result);
     }
 
     [Fact]
     public void GetAll_ShouldReturnAllProjects()
     {
-        using var connection = CreateTestDatabase();
-        var repo = new ProjectRepository(connection);
-        repo.Insert(new ProjectModel(0, "ProjectA", "src/A/A.csproj", DateTime.UtcNow.ToString("O")));
-        repo.Insert(new ProjectModel(0, "ProjectB", "src/B/B.csproj", DateTime.UtcNow.ToString("O")));
+        var repo = new ProjectRepository(_connection);
+        repo.Insert(new ProjectModel(0, "ProjectA", $"src/A/{Guid.NewGuid()}.csproj", DateTime.UtcNow.ToString("O")));
+        repo.Insert(new ProjectModel(0, "ProjectB", $"src/B/{Guid.NewGuid()}.csproj", DateTime.UtcNow.ToString("O")));
 
         var results = repo.GetAll();
-
         Assert.Equal(2, results.Count);
     }
 }
