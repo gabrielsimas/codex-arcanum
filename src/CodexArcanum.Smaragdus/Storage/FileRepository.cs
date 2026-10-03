@@ -47,4 +47,13 @@ public class FileRepository(SqliteConnection connection)
         cmd.Parameters.AddWithValue("@Path", path);
         return cmd.ExecuteNonQuery();
     }
+
+    public void UpdateIndexStatus(int fileId, string status)
+    {
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "UPDATE Files SET IndexStatus = @status WHERE Id = @id;";
+        cmd.Parameters.AddWithValue("@status", status);
+        cmd.Parameters.AddWithValue("@id", fileId);
+        cmd.ExecuteNonQuery();
+    }
 }
