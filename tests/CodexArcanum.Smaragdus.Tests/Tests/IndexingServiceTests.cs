@@ -46,12 +46,11 @@ public class IndexingServiceTests : IDisposable
 
         var filePath = Path.Combine(_tempDir, "UserService.cs");
         await File.WriteAllTextAsync(filePath, @"
-            namespace MyApp.Services {
-                public class UserService {
-                    public void Process(UserRequest req) { }
-                }
-            }
-");
+namespace MyApp.Services {
+    public class UserService {
+        public void Process(UserRequest req) { }
+    }
+}");
 
         var result = await _indexingService.IndexFileAsync(filePath, projectId, _tempDir);
 
@@ -63,8 +62,7 @@ public class IndexingServiceTests : IDisposable
         Assert.NotNull(file);
         Assert.Equal("Success", file.IndexStatus);
 
-        var symbols = new SymbolRepository(_connection).GetAll(); // Assume we add a GetAll for testing, or query by FileId
-        // Using a direct query to verify mapping worked
+        // Validação direta via query para evitar métodos desnecessários no repositório
         using var cmd = _connection.CreateCommand();
         cmd.CommandText = "SELECT COUNT(*) FROM Symbols WHERE FileId = @fileId;";
         cmd.Parameters.AddWithValue("@fileId", file.Id);
@@ -75,7 +73,7 @@ public class IndexingServiceTests : IDisposable
         cmd2.CommandText = "SELECT COUNT(*) FROM Parameters WHERE SymbolId IN (SELECT Id FROM Symbols WHERE FileId = @fileId);";
         cmd2.Parameters.AddWithValue("@fileId", file.Id);
         var paramCount = Convert.ToInt32(cmd2.ExecuteScalar());
-        Assert.Equal(1, paramCount); // 'req' parameter
+        Assert.Equal(1, paramCount); // parâmetro 'req'
     }
 
     [Fact]
