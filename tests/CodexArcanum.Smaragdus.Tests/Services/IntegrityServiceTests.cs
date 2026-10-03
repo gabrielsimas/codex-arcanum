@@ -63,19 +63,20 @@ public class IntegrityServiceTests : IDisposable
         await File.WriteAllTextAsync(filePath, "public class UserService { }");
         var fileInfo = new FileInfo(filePath);
 
-        // Registra com timestamp antigo
-        var oldTimestamp = DateTime.UtcNow.AddDays(-1).ToString("O");
+        // Registra com LastWriteUtc antigo no banco, divergente do disco atual
+        var oldLastWriteUtc = DateTime.UtcNow.AddDays(-1).ToString("O");
         var fileModel = new FileModel(
             0, projectId, "UserService.cs",
-            oldTimestamp,
+            oldLastWriteUtc, // LastWriteUtc (antigo, forçando divergência)
             fileInfo.Length, "hash123",
-            DateTime.UtcNow.ToString("O"), 0, "Success");
+            DateTime.UtcNow.ToString("O"), // IndexedAt (atual)
+            0, "Success");
         _fileRepo.Insert(fileModel);
 
         var result = await _integrityService.CheckFreshnessAsync("UserService.cs", _tempDir, verifyHash: false);
 
         Assert.True(result.IsStale);
-        Assert.Equal(oldTimestamp, result.LastIndexed);
+        Assert.Equal(fileInfo.LastWriteTimeUtc.ToString("O"), result.DiskLastWrite);
     }
 
     [Fact]
