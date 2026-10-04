@@ -3,14 +3,14 @@ namespace CodexArcanum.Grimoire.Endpoints;
 //TODO: Refatorar para retirar todos esses códigos e passá-los para o CommandHandler, que será chamado pelo endpoint. O endpoint deve apenas validar os parâmetros e chamar o handler.
 public static class SnippetEndpoint
 {
-    public static void MapSnipppetEndpoint(this IEndpointRouteBuilder app)
+    public static void MapSnippetEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet("/api/files/snippet", (
             string path,
             int start,
             int end,
-            string solutionRoot,
-            FileRepository fileRepo) =>
+            [FromServices] string solutionRoot,
+            [FromServices] FileRepository fileRepo) =>
         {
             // 1. Validação de Path (segurança contra path traversal)
             var (isValid, errorMessage) = PathValidator.Validate(path, solutionRoot);

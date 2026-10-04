@@ -5,6 +5,7 @@ public class SnippetEndpointTests : IClassFixture<WebApplicationFactory<Program>
     private readonly WebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
     private readonly string _tempDir;
+    private readonly string _dbPath;
 
     public SnippetEndpointTests(WebApplicationFactory<Program> factory)
     {
@@ -21,15 +22,21 @@ public class SnippetEndpointTests : IClassFixture<WebApplicationFactory<Program>
             "}"
         });
 
-        var dbPath = Path.Combine(_tempDir, "test.db");
-        var connectionString = $"Data Source={dbPath}";
+        _dbPath = Path.Combine(_tempDir, "test.db");
+        var connectionString = $"Data Source={_dbPath}";
 
         using (var connection = SqliteConnectionFactory.CreateConnection(connectionString))
         {
             DatabaseInitializer.Initialize(connection);
+
+            // 1. Inserir um projeto primeiro para satisfazer a Foreign Key
+            var projectRepo = new ProjectRepository(connection);
+            var projectId = projectRepo.Insert(new ProjectModel(0, "TestProject", "TestProject.csproj", DateTime.UtcNow.ToString("O")));
+
+            // 2. Inserir o arquivo com o ProjectId correto retornado acima
             var fileRepo = new FileRepository(connection);
             fileRepo.Insert(new FileModel(
-                0, 1, "TestFile.cs",
+                0, projectId, "TestFile.cs",
                 DateTime.UtcNow.ToString("O"),
                 new FileInfo(testFilePath).Length,
                 "dummyhash",
@@ -39,14 +46,8 @@ public class SnippetEndpointTests : IClassFixture<WebApplicationFactory<Program>
         // Configura o factory para usar o diretório temporário e o banco de teste
         _factory = factory.WithWebHostBuilder(builder =>
         {
-            builder.ConfigureAppConfiguration((context, config) =>
-            {
-                config.AddInMemoryCollection(new[]
-                {
-                    new KeyValuePair<string, string?>("CodexArcanum:SolutionRoot", _tempDir),
-                    new KeyValuePair<string, string?>("CodexArcanum:DbPath", dbPath)
-                });
-            });
+            builder.UseSetting("CodexArcanum:SolutionRoot", _tempDir);
+            builder.UseSetting("CodexArcanum:DbPath", _dbPath);
         });
 
         _client = _factory.CreateClient();

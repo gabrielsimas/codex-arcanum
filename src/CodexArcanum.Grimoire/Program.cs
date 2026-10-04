@@ -15,7 +15,7 @@ var dbPath = config["CodexArcanum:DbPath"];
 if (string.IsNullOrEmpty(dbPath))
 {
     // Inicialização do Smaragdus
-    var dbDir = Path.Combine(Directory.GetCurrentDirectory(), ".codex-arcanum", "db");
+    var dbDir = Path.Combine(solutionRoot, ".codex-arcanum", "db");
     Directory.CreateDirectory(dbDir);
 
     var slnFile = Directory.GetFiles(Directory.GetCurrentDirectory(), "*.sln").FirstOrDefault()
@@ -46,6 +46,7 @@ builder.Services.AddSingleton(sp =>
 });
 
 builder.Services.AddSingleton(solutionRoot);
+builder.Services.AddSingleton<RoslynParser>();
 builder.Services.AddSingleton<ProjectRepository>();
 builder.Services.AddSingleton<FileRepository>();
 builder.Services.AddSingleton<SymbolRepository>();
@@ -58,6 +59,6 @@ var app = builder.Build();
 
 app.MapGet("/", () => $"🔮 Grimoire ativo em http://127.0.0.1:{PORTA_CABALISTICA}");
 
-app.MapSnipppetEndpoint();
+app.MapSnippetEndpoint();
 
 app.Run();
