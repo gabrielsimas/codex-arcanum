@@ -2,7 +2,7 @@ namespace CodexArcanum.Smaragdus.Parsing;
 
 public class RoslynParser
 {
-    public ParseResult Parse(string filePath, string content)
+    public ParsingResult Parse(string filePath, string content)
     {
         var tree = CSharpSyntaxTree.ParseText(content);
         var root = tree.GetRoot();
@@ -100,7 +100,7 @@ public class RoslynParser
             }
         }
 
-        return new ParseResult(symbols, parameters, dependencies, status);
+        return new ParsingResult(symbols, parameters, dependencies, status);
     }
 
     private static string BuildFullName(MemberDeclarationSyntax member, string name)

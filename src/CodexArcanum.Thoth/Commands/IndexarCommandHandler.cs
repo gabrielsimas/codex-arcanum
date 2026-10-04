@@ -1,3 +1,7 @@
+using CodexArcanum.Smaragdus.Models;
+using CodexArcanum.Smaragdus.Parsing;
+using CodexArcanum.Smaragdus.Services;
+
 namespace CodexArcanum.Thoth.Commands;
 
 public class IndexarCommandHandler
@@ -50,15 +54,51 @@ public class IndexarCommandHandler
         using var connection = SqliteConnectionFactory.CreateConnection($"Data Source={dbPath}");
         DatabaseInitializer.Initialize(connection);
 
+        var parser = new RoslynParser();
+        var projectRepo = new ProjectRepository(connection);
+        var fileRepo = new FileRepository(connection);
+        var symbolRepo = new SymbolRepository(connection);
+        var paramRepo = new ParameterRepository(connection);
+        var depRepo = new DependencyRepository(connection);
+        var indexingService = new IndexingService(parser, projectRepo, fileRepo, symbolRepo, paramRepo, depRepo);
+
         // 4. Orquestração da Indexação (Smaragdus)
         Console.WriteLine($"📜 Iniciando indexação de: {solutionName}");
         Console.WriteLine($"💾 Banco de dados: {dbPath}");
 
-        // TODO: Implementar varredura de arquivos e chamada ao IndexingService
-        // Por enquanto, apenas um placeholder de sucesso
-        Console.WriteLine("✅ Indexação concluída com sucesso (Placeholder).");
+        var projectId = projectRepo.Insert(new ProjectModel(0, solutionName, targetFile ?? "Avulso", DateTime.UtcNow.ToString("O")));
+        var ignorePatterns = GitIgnoreFilter.GetIgnorePatterns(targetDir);
 
-        return 0;
+        var filesToIndex = Directory.GetFiles(targetDir, "*.cs", SearchOption.AllDirectories)
+            .Select(f => Path.GetRelativePath(targetDir, f).Replace("\\", "/"))
+            .Where(p => !GitIgnoreFilter.IsIgnored(p, ignorePatterns))
+            .ToList();
+
+        int successCount = 0, partialCount = 0, failCount = 0;
+
+        foreach (var file in filesToIndex)
+        {
+            var absolutePath = Path.Combine(targetDir, file.Replace("/", Path.DirectorySeparatorChar.ToString()));
+            try
+            {
+                var result = await indexingService.IndexFileAsync(absolutePath, projectId, targetDir);
+                if (result.Status == "Success") successCount++;
+                else if (result.Status == "Partial") partialCount++;
+                else failCount++;
+
+                Console.Write(".");
+            }
+            catch (Exception ex)
+            {
+                failCount++;
+                Console.WriteLine($"\n❌ Falha ao indexar {file}: {ex.Message}");
+            }
+        }
+
+        Console.WriteLine("\n✅ Indexação concluída!");
+        Console.WriteLine($"📊 Resumo: {successCount} sucesso(s) | ⚠️ {partialCount} parcial(is) | ❌ {failCount} falha(s)");
+
+        return failCount > 0 ? 1 : 0;
     }
 
     private static void EnsureGitIgnore(string targetDir)
