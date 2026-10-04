@@ -8,23 +8,28 @@ builder.WebHost.ConfigureKestrel(options =>
     options.ListenLocalhost(PORTA_CABALISTICA);
 });
 
-// Inicialização do Smaragdus
-var dbDir = Path.Combine(Directory.GetCurrentDirectory(), ".codex-arcanum", "db");
-Directory.CreateDirectory(dbDir);
+var config = builder.Configuration;
+var solutionRoot = config["CodexArcanum:SolutionRoot"] ?? Directory.GetCurrentDirectory();
+var dbPath = config["CodexArcanum:DbPath"];
 
-var slnFile = Directory.GetFiles(Directory.GetCurrentDirectory(), "*.sln").FirstOrDefault()
-           ?? Directory.GetFiles(Directory.GetCurrentDirectory(), "*.slnx").FirstOrDefault();
-var csprojFile = Directory.GetFiles(Directory.GetCurrentDirectory(), "*.csproj").FirstOrDefault();
+if (string.IsNullOrEmpty(dbPath))
+{
+    // Inicialização do Smaragdus
+    var dbDir = Path.Combine(Directory.GetCurrentDirectory(), ".codex-arcanum", "db");
+    Directory.CreateDirectory(dbDir);
 
-string solutionName = "default";
-if (slnFile != null) solutionName = Path.GetFileNameWithoutExtension(slnFile);
-else if (csprojFile != null) solutionName = Path.GetFileNameWithoutExtension(csprojFile);
+    var slnFile = Directory.GetFiles(Directory.GetCurrentDirectory(), "*.sln").FirstOrDefault()
+        ?? Directory.GetFiles(Directory.GetCurrentDirectory(), "*.slnx").FirstOrDefault();
+    var csprojFile = Directory.GetFiles(Directory.GetCurrentDirectory(), "*.csproj").FirstOrDefault();
 
-var solutionRoot = slnFile != null ? Path.GetDirectoryName(slnFile)!
-                 : csprojFile != null ? Path.GetDirectoryName(csprojFile)!
-                 : Directory.GetCurrentDirectory();
+    string solutionName = "default";
+    if (slnFile != null) solutionName = Path.GetFileNameWithoutExtension(slnFile);
+    else if (csprojFile != null) solutionName = Path.GetFileNameWithoutExtension(csprojFile);
 
-var dbPath = Path.Combine(dbDir, $"{solutionName}.db");
+    dbPath = Path.Combine(dbDir, $"{solutionName}.db");
+}
+
+
 var connectionString = $"Data Source={dbPath}";
 
 // Injeção de dependência (Singletons compartilham a mesma conexão SQLite)
@@ -47,9 +52,12 @@ builder.Services.AddSingleton<SymbolRepository>();
 builder.Services.AddSingleton<ParameterRepository>();
 builder.Services.AddSingleton<DependencyRepository>();
 builder.Services.AddSingleton<IntegrityService>();
+builder.Services.AddSingleton<IndexingService>();
 
 var app = builder.Build();
 
 app.MapGet("/", () => $"🔮 Grimoire ativo em http://127.0.0.1:{PORTA_CABALISTICA}");
+
+app.MapSnipppetEndpoint();
 
 app.Run();
