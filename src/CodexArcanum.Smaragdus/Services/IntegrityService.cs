@@ -45,4 +45,76 @@ public class IntegrityService(FileRepository fileRepo)
         var hash = SHA256.HashData(bytes);
         return Convert.ToHexStringLower(hash);
     }
+
+    public async Task<List<OrphanFile>> GetOrphansAsync(string solutionRoot)
+    {
+        var files = _fileRepo.GetAll();
+        var orphans = new List<OrphanFile>();
+
+        foreach (var file in files)
+        {
+            var absolutePath = Path.Combine(solutionRoot, file.Path.Replace("/", Path.DirectorySeparatorChar.ToString()));
+            if (!File.Exists(absolutePath))
+            {
+                orphans.Add(new OrphanFile(file.Path, file.IndexedAt));
+            }
+        }
+
+        return orphans;
+    }
+
+    public async Task<List<StaleFile>> GetStaleFilesAsync(string solutionRoot)
+    {
+        var files = _fileRepo.GetAll();
+        var staleFiles = new List<StaleFile>();
+
+        foreach (var file in files)
+        {
+            var absolutePath = Path.Combine(solutionRoot, file.Path.Replace("/", Path.DirectorySeparatorChar.ToString()));
+            if (!File.Exists(absolutePath)) continue;
+
+            var fileInfo = new FileInfo(absolutePath);
+            var diskLastWrite = fileInfo.LastWriteTimeUtc.ToString("O");
+            var diskSize = fileInfo.Length;
+
+            if (!string.Equals(file.LastWriteUtc, diskLastWrite, StringComparison.Ordinal) ||
+                file.FileSize != diskSize)
+            {
+                staleFiles.Add(new StaleFile(file.Path, file.IndexedAt, file.LastWriteUtc, diskLastWrite, file.FileSize, diskSize));
+            }
+        }
+
+        return staleFiles;
+    }
+
+    public async Task<List<CorruptedFile>> GetCorruptedFilesAsync(string solutionRoot)
+    {
+        var files = _fileRepo.GetAll();
+        var corruptedFiles = new List<CorruptedFile>();
+
+        foreach (var file in files)
+        {
+            var absolutePath = Path.Combine(solutionRoot, file.Path.Replace("/", Path.DirectorySeparatorChar.ToString()));
+            if (!File.Exists(absolutePath)) continue;
+
+            var fileInfo = new FileInfo(absolutePath);
+            var diskLastWrite = fileInfo.LastWriteTimeUtc.ToString("O");
+            var diskSize = fileInfo.Length;
+
+            // Apenas verifica hash se timestamp e tamanho forem iguais
+            if (string.Equals(file.LastWriteUtc, diskLastWrite, StringComparison.Ordinal) &&
+                file.FileSize == diskSize)
+            {
+                var content = await File.ReadAllTextAsync(absolutePath);
+                var diskHash = ComputeSha256(content);
+
+                if (!string.Equals(file.Hash, diskHash, StringComparison.Ordinal))
+                {
+                    corruptedFiles.Add(new CorruptedFile(file.Path, file.IndexedAt, file.FileSize, file.Hash, diskHash));
+                }
+            }
+        }
+
+        return corruptedFiles;
+    }
 }

@@ -130,4 +130,79 @@ public class IntegrityServiceTests : IDisposable
 
         Assert.Null(result);
     }
+
+    [Fact]
+    public async Task GetOrphansAsync_ShouldReturnFilesNotOnDisk()
+    {
+        var projectId = _projectRepo.Insert(new ProjectModel(0, "TestProj", "TestProj.csproj", DateTime.UtcNow.ToString("O")));
+
+        // Arquivo que existe no disco
+        var existingFile = Path.Combine(_tempDir, "Existing.cs");
+        await File.WriteAllTextAsync(existingFile, "public class Existing { }");
+        var fileInfo = new FileInfo(existingFile);
+        _fileRepo.Insert(new FileModel(
+            0, projectId, "Existing.cs",
+            fileInfo.LastWriteTimeUtc.ToString("O"),
+            fileInfo.Length, "hash1",
+            DateTime.UtcNow.ToString("O"), 0, "Success"));
+
+        // Arquivo que NÃO existe no disco (órfão)
+        _fileRepo.Insert(new FileModel(
+            0, projectId, "Deleted.cs",
+            DateTime.UtcNow.AddDays(-1).ToString("O"),
+            1024, "hash2",
+            DateTime.UtcNow.ToString("O"), 0, "Success"));
+
+        var orphans = await _integrityService.GetOrphansAsync(_tempDir);
+
+        Assert.Single(orphans);
+        Assert.Equal("Deleted.cs", orphans[0].Path);
+    }
+
+    [Fact]
+    public async Task GetStaleFilesAsync_ShouldReturnFilesWithDifferentTimestampOrSize()
+    {
+        var projectId = _projectRepo.Insert(new ProjectModel(0, "TestProj", "TestProj.csproj", DateTime.UtcNow.ToString("O")));
+
+        // Arquivo atualizado no disco (tamanho diferente)
+        var staleFile = Path.Combine(_tempDir, "Stale.cs");
+        await File.WriteAllTextAsync(staleFile, "public class Stale { public void NewMethod() { } }");
+        var fileInfo = new FileInfo(staleFile);
+
+        // Registra com tamanho antigo
+        _fileRepo.Insert(new FileModel(
+            0, projectId, "Stale.cs",
+            fileInfo.LastWriteTimeUtc.ToString("O"),
+            fileInfo.Length - 10, "hash1",
+            DateTime.UtcNow.ToString("O"), 0, "Success"));
+
+        var staleFiles = await _integrityService.GetStaleFilesAsync(_tempDir);
+
+        Assert.Single(staleFiles);
+        Assert.Equal("Stale.cs", staleFiles[0].Path);
+    }
+
+    [Fact]
+    public async Task GetCorruptedFilesAsync_ShouldReturnFilesWithDifferentHash()
+    {
+        var projectId = _projectRepo.Insert(new ProjectModel(0, "TestProj", "TestProj.csproj", DateTime.UtcNow.ToString("O")));
+
+        // Arquivo com mesmo timestamp/tamanho mas hash diferente
+        var corruptedFile = Path.Combine(_tempDir, "Corrupted.cs");
+        await File.WriteAllTextAsync(corruptedFile, "public class Corrupted { }");
+        var fileInfo = new FileInfo(corruptedFile);
+
+        // Registra com hash errado (mas timestamp e tamanho iguais)
+        _fileRepo.Insert(new FileModel(
+            0, projectId, "Corrupted.cs",
+            fileInfo.LastWriteTimeUtc.ToString("O"),
+            fileInfo.Length, "wrong_hash",
+            DateTime.UtcNow.ToString("O"), 0, "Success"));
+
+        var corruptedFiles = await _integrityService.GetCorruptedFilesAsync(_tempDir);
+
+        Assert.Single(corruptedFiles);
+        Assert.Equal("Corrupted.cs", corruptedFiles[0].Path);
+        Assert.NotEqual("wrong_hash", corruptedFiles[0].DiskHash);
+    }
 }
