@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/CodexArcanum.Grimoire/CodexArcanum.Grimoire.csproj" />
     <Project Path="src/CodexArcanum.Smaragdus/CodexArcanum.Smaragdus.csproj" />
     <Project Path="src/CodexArcanum.Thoth/CodexArcanum.Thoth.csproj" />
   </Folder>

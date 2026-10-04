@@ -1,0 +1,6 @@
+@CodexArcanum.Grimoire_HostAddress = http://localhost:5206
+
+GET {{CodexArcanum.Grimoire_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
