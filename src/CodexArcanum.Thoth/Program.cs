@@ -17,24 +17,24 @@ indexarCommand.SetAction(async (parseResult) =>
 });
 
 var orfaosCommand = new Command("orfaos", "Lista arquivos presentes no índice mas ausentes no disco (Isfet por ausência)");
-orfaosCommand.SetAction((parseResult) =>
+orfaosCommand.SetAction(async (parseResult) =>
 {
     Console.WriteLine("Verificando arquivos órfãos...");
-    return Task.FromResult(0);
+    return await OrfaosCommandHandler.HandleAsync();
 });
 
 var desatualizadosCommand = new Command("desatualizados", "Lista arquivos modificados no disco mas não reindexados (Isfet por divergência)");
-desatualizadosCommand.SetAction((parseResult) =>
+desatualizadosCommand.SetAction(async (parseResult) =>
 {
     Console.WriteLine("Verificando arquivos desatualizados...");
-    return Task.FromResult(0);
+    return await DesatualizadosCommandHandler.HandleAsync();
 });
 
 var corrompidosCommand = new Command("corrompidos", "Lista arquivos com hash diferente do índice (Isfet por inconsistência silenciosa)");
-corrompidosCommand.SetAction((parseResult) =>
+corrompidosCommand.SetAction(async (parseResult) =>
 {
     Console.WriteLine("Verificando arquivos corrompidos...");
-    return Task.FromResult(0);
+    return await CorrompidosCommandHandler.HandleAsync();
 });
 
 var rootCommand = new RootCommand("Codex Arcanum Thoth - CLI de indexação e diagnóstico de codebase .NET")
