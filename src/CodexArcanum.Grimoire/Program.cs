@@ -61,5 +61,6 @@ app.MapGet("/", () => $"🔮 Grimoire ativo em http://127.0.0.1:{PORTA_CABALISTI
 
 app.MapSnippetEndpoint();
 app.MapFreshnessEndpoint();
+app.MapSearchEndpoint();
 
 app.Run();
