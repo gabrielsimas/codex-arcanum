@@ -62,8 +62,10 @@ public class DependencyRepositoryTests : IDisposable
         var results = _dependencyRepo.GetOutgoing(sourceId);
 
         Assert.Equal(2, results.Count);
-        Assert.Contains(results, r => r.TargetName == "MyApp.Services.OrderService" && r.TargetId == targetId);
-        Assert.Contains(results, r => r.TargetName == "MyApp.Services.PaymentService" && r.TargetId == null);
+
+        // ATUALIZADO: Usando as propriedades do record OutgoingDependency
+        Assert.Contains(results, r => r.CalleeName == "MyApp.Services.OrderService" && r.SymbolId == targetId);
+        Assert.Contains(results, r => r.CalleeName == "MyApp.Services.PaymentService" && r.SymbolId == 0); // 0 representa TargetId nulo (devido ao COALESCE no SQL)
     }
 
     [Fact]
@@ -75,7 +77,10 @@ public class DependencyRepositoryTests : IDisposable
         var results = _dependencyRepo.GetIncoming(targetId);
 
         Assert.Single(results);
-        Assert.Equal(sourceId, results[0].SourceId);
+
+        // ATUALIZADO: Usando as propriedades do record IncomingDependency
+        Assert.Equal(sourceId, results[0].SymbolId);
+        Assert.Equal("MyApp.Services.UserService", results[0].CallerName); // O JOIN no SQL retorna o FullName do Source (quem chama)
         Assert.Equal("src/Test.cs", results[0].FilePath);
         Assert.Equal(25, results[0].Line);
     }

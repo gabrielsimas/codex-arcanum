@@ -10,7 +10,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>codex-thoth</ToolCommandName>
     <PackageId>CodexArcanum.Thoth</PackageId>
-    <Version>0.1.4.1</Version>
+    <Version>0.1.5.2</Version>
     <Authors>Luís Gabriel N. Simas</Authors>
     <Description>CLI de indexação e diagnóstico de codebase .NET</Description>
     <PackageOutputPath>./nupkg</PackageOutputPath>

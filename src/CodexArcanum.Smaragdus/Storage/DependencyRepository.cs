@@ -27,30 +27,66 @@ public class DependencyRepository
         return Convert.ToInt32(cmd.ExecuteScalar());
     }
 
-    public List<DependencyModel> GetOutgoing(int sourceId)
+    public List<OutgoingDependency> GetOutgoing(int sourceId)
     {
         using var cmd = _connection.CreateCommand();
+        // Query exata da Spec 3.4 (com COALESCE para evitar null no C# e Relationship incluído)
         cmd.CommandText = @"
-            SELECT Id, SourceId, TargetName, TargetId, Relationship, FilePath, Line
-            FROM Dependencies
-            WHERE SourceId = @sourceId;";
+        SELECT
+            COALESCE(d.TargetId, 0) AS SymbolId,
+            d.TargetName AS CalleeName,
+            d.Relationship,
+            d.FilePath,
+            d.Line
+        FROM Dependencies d
+        WHERE d.SourceId = @sourceId;";
         cmd.Parameters.AddWithValue("@sourceId", sourceId);
 
-        return ReadDependencies(cmd);
+        var results = new List<OutgoingDependency>();
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            results.Add(new OutgoingDependency(
+                reader.GetInt32(0),
+                reader.GetString(1),
+                reader.GetString(2),
+                reader.GetString(3),
+                reader.GetInt32(4)
+            ));
+        }
+        return results;
     }
 
-    public List<DependencyModel> GetIncoming(int targetId)
+    public List<IncomingDependency> GetIncoming(int targetId)
     {
         using var cmd = _connection.CreateCommand();
+        // Query exata da Spec 3.4 para Incoming
         cmd.CommandText = @"
-            SELECT d.Id, d.SourceId, d.TargetName, d.TargetId, d.Relationship, d.FilePath, d.Line
-            FROM Dependencies d
-            INNER JOIN Symbols s ON d.SourceId = s.Id
-            WHERE d.TargetId = @targetId
-               OR d.TargetName = (SELECT FullName FROM Symbols WHERE Id = @targetId);";
+        SELECT
+            d.SourceId AS SymbolId,
+            s.FullName AS CallerName,
+            d.Relationship,
+            d.FilePath,
+            d.Line
+        FROM Dependencies d
+        INNER JOIN Symbols s ON d.SourceId = s.Id
+        WHERE d.TargetId = @targetId
+           OR d.TargetName = (SELECT FullName FROM Symbols WHERE Id = @targetId);";
         cmd.Parameters.AddWithValue("@targetId", targetId);
 
-        return ReadDependencies(cmd);
+        var results = new List<IncomingDependency>();
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            results.Add(new IncomingDependency(
+                reader.GetInt32(0),
+                reader.GetString(1),
+                reader.GetString(2),
+                reader.GetString(3),
+                reader.GetInt32(4)
+            ));
+        }
+        return results;
     }
 
     public List<DependencyModel> GetHierarchy(int sourceId)
