@@ -74,4 +74,20 @@ public class FileRepository(SqliteConnection connection)
         }
         return files;
     }
+
+    public FileModel? GetById(int id)
+    {
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = @"
+            SELECT Id, ProjectId, Path, LastWriteUtc, FileSize, Hash, IndexedAt, ReindexCount, IndexStatus
+            FROM Files WHERE Id = @id;";
+        cmd.Parameters.AddWithValue("@id", id);
+
+        using var reader = cmd.ExecuteReader();
+        if (!reader.Read()) return null;
+
+        return new FileModel(
+            reader.GetInt32(0), reader.GetInt32(1), reader.GetString(2), reader.GetString(3),
+            reader.GetInt64(4), reader.GetString(5), reader.GetString(6), reader.GetInt32(7), reader.GetString(8));
+    }
 }
