@@ -47,4 +47,16 @@ public class ProjectRepository(SqliteConnection connection)
         }
         return projects;
     }
+
+    public int GetOrCreate(string name, string path)
+    {
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "SELECT Id FROM Projects WHERE Path = @path;";
+        cmd.Parameters.AddWithValue("@path", path);
+        var result = cmd.ExecuteScalar();
+
+        if (result != null) return Convert.ToInt32(result);
+
+        return Insert(new ProjectModel(0, name, path, DateTime.UtcNow.ToString("O")));
+    }
 }

@@ -59,11 +59,12 @@ var app = builder.Build();
 
 app.MapGet("/", () => $"🔮 Grimoire ativo em http://127.0.0.1:{PORTA_CABALISTICA}");
 
+app.MapSearchEndpoint();
+app.MapReindexEndpoint();
 app.MapSnippetEndpoint();
 app.MapFreshnessEndpoint();
-app.MapSearchEndpoint();
+app.MapHierarchyEndpoint();
 app.MapSignatureEndpoint();
 app.MapDependenciesEndpoint();
-app.MapHierarchyEndpoint();
 
 app.Run();

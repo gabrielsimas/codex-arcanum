@@ -98,4 +98,29 @@ public class SymbolRepository
             reader.GetInt32(11) == 1
         );
     }
+
+    public List<SymbolModel> GetByFileId(int fileId)
+    {
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = @"
+            SELECT Id, FileId, Name, Kind, FullName, ReturnType, LineStart, LineEnd,
+                   Modifiers, Attributes, XmlDoc, IsDynamicEntrypoint
+            FROM Symbols
+            WHERE FileId = @fileId
+            ORDER BY LineStart;";
+        cmd.Parameters.AddWithValue("@fileId", fileId);
+
+        var results = new List<SymbolModel>();
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            results.Add(new SymbolModel(
+                reader.GetInt32(0), reader.GetInt32(1), reader.GetString(2), reader.GetString(3),
+                reader.GetString(4), reader.IsDBNull(5) ? null : reader.GetString(5),
+                reader.GetInt32(6), reader.GetInt32(7), reader.GetString(8), reader.GetString(9),
+                reader.IsDBNull(10) ? null : reader.GetString(10), reader.GetBoolean(11)
+            ));
+        }
+        return results;
+    }
 }

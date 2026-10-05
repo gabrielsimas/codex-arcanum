@@ -1,4 +1,5 @@
 global using System.Net;
+global using System.Text;
 global using System.Text.Json;
 global using CodexArcanum.Smaragdus.Models;
 global using CodexArcanum.Smaragdus.Storage;

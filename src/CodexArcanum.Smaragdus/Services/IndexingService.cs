@@ -1,6 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
-
 namespace CodexArcanum.Smaragdus.Services;
 
 public class IndexingService
@@ -73,7 +70,8 @@ public class IndexingService
             tempId++;
         }
 
-        return new FileIndexResult(relativePath, parseResult.Status, parseResult.Symbols.Count);
+        var newSymbols = _symbolRepo.GetByFileId(fileId).Select(s => new ReindexedSymbol(s.Id, s.FullName)).ToList();
+        return new FileIndexResult(relativePath, parseResult.Status, parseResult.Symbols.Count, newSymbols);
     }
 
     private static string ComputeSha256(string content)
@@ -81,5 +79,20 @@ public class IndexingService
         var bytes = Encoding.UTF8.GetBytes(content);
         var hash = SHA256.HashData(bytes);
         return Convert.ToHexStringLower(hash);
+    }
+
+    public async Task<FileIndexResult> ReindexFileAsync(string filePath, string solutionRoot, string projectName, string projectPath)
+    {
+        var relativePath = Path.GetRelativePath(solutionRoot, filePath).Replace("\\", "/");
+
+        // Tenta manter o ProjectId original, ou cria um padrão se não existir
+        var existingFile = _fileRepo.GetByPath(relativePath);
+        int projectId = existingFile?.ProjectId ?? _projectRepo.GetOrCreate(projectName, projectPath);
+
+        // Passo 1: Deletar o arquivo (Cascade apaga Symbols, Parameters, Dependencies)
+        _fileRepo.DeleteByPath(relativePath);
+
+        // Passo 2: Reindexar do zero (o IndexFileAsync já faz o INSERT e retorna os novos SymbolIds)
+        return await IndexFileAsync(filePath, projectId, solutionRoot);
     }
 }
