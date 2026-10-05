@@ -97,10 +97,16 @@ public class DependencyRepositoryTests : IDisposable
 
         var results = _dependencyRepo.GetHierarchy(sourceId);
 
-        Assert.Equal(2, results.Count);
-        Assert.Contains(results, r => r.Relationship == "Inherits" && r.TargetName == "BaseService");
-        Assert.Contains(results, r => r.Relationship == "Implements" && r.TargetName == "IService");
-        Assert.DoesNotContain(results, r => r.Relationship == "Calls");
+        // Valida a lista de BaseAndInterfaces
+        Assert.Equal(2, results.BaseAndInterfaces.Count);
+        Assert.Contains(results.BaseAndInterfaces, r => r.Relationship == "Inherits" && r.Name == "BaseService");
+        Assert.Contains(results.BaseAndInterfaces, r => r.Relationship == "Implements" && r.Name == "IService");
+
+        // Valida que "Calls" foi corretamente filtrado e não está na hierarquia
+        Assert.DoesNotContain(results.BaseAndInterfaces, r => r.Relationship == "Calls");
+
+        // Valida a lista de DerivedClasses (deve estar vazia neste cenário, pois ninguém herda de sourceId)
+        Assert.Empty(results.DerivedClasses);
     }
 
     [Fact]

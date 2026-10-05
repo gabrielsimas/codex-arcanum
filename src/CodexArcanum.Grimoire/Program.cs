@@ -64,5 +64,6 @@ app.MapFreshnessEndpoint();
 app.MapSearchEndpoint();
 app.MapSignatureEndpoint();
 app.MapDependenciesEndpoint();
+app.MapHierarchyEndpoint();
 
 app.Run();

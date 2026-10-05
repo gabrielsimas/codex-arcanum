@@ -89,17 +89,56 @@ public class DependencyRepository
         return results;
     }
 
-    public List<DependencyModel> GetHierarchy(int sourceId)
+    public HierarchyData GetHierarchy(int symbolId)
     {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = @"
-            SELECT Id, SourceId, TargetName, TargetId, Relationship, FilePath, Line
-            FROM Dependencies
-            WHERE SourceId = @sourceId
-              AND Relationship IN ('Inherits', 'Implements');";
-        cmd.Parameters.AddWithValue("@sourceId", sourceId);
+        var baseAndInterfaces = new List<HierarchyRelation>();
+        var derivedClasses = new List<HierarchyRelation>();
 
-        return ReadDependencies(cmd);
+        // Query 1: Base Class e Interfaces (quem eu herdo/implemento)
+        using var cmd1 = _connection.CreateCommand();
+        cmd1.CommandText = @"
+        SELECT
+            COALESCE(TargetId, 0) AS SymbolId,
+            TargetName AS Name,
+            Relationship
+        FROM Dependencies
+        WHERE SourceId = @symbolId
+          AND Relationship IN ('Inherits', 'Implements');";
+        cmd1.Parameters.AddWithValue("@symbolId", symbolId);
+
+        using var reader1 = cmd1.ExecuteReader();
+        while (reader1.Read())
+        {
+            baseAndInterfaces.Add(new HierarchyRelation(
+                reader1.GetInt32(0),
+                reader1.GetString(1),
+                reader1.GetString(2)
+            ));
+        }
+
+        // Query 2: Derived Classes (quem herda de mim)
+        using var cmd2 = _connection.CreateCommand();
+        cmd2.CommandText = @"
+        SELECT
+            d.SourceId AS SymbolId,
+            s.Name
+        FROM Dependencies d
+        INNER JOIN Symbols s ON d.SourceId = s.Id
+        WHERE (d.TargetId = @symbolId OR d.TargetName = (SELECT FullName FROM Symbols WHERE Id = @symbolId))
+          AND d.Relationship = 'Inherits';";
+        cmd2.Parameters.AddWithValue("@symbolId", symbolId);
+
+        using var reader2 = cmd2.ExecuteReader();
+        while (reader2.Read())
+        {
+            derivedClasses.Add(new HierarchyRelation(
+                reader2.GetInt32(0),
+                reader2.GetString(1),
+                "Inherits" // Explicitamente definido, pois a query já filtra por isso
+            ));
+        }
+
+        return new HierarchyData(baseAndInterfaces, derivedClasses);
     }
 
     private List<DependencyModel> ReadDependencies(SqliteCommand cmd)
