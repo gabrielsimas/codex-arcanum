@@ -48,7 +48,7 @@ public class CodexArcanumTools
             {
                 var fileInfo = new FileInfo(absolutePath);
                 isStale = !string.Equals(r.LastWriteUtc, fileInfo.LastWriteTimeUtc.ToString("O"), StringComparison.Ordinal) ||
-                          r.FileSize != fileInfo.Length;
+                        r.FileSize != fileInfo.Length;
             }
             return new { r.SymbolId, r.FullName, r.Kind, r.FilePath, r.LineStart, r.LineEnd, r.XmlDocSummary, isStale };
         }).ToList();
