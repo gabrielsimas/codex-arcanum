@@ -37,12 +37,17 @@ corrompidosCommand.SetAction(async (parseResult) =>
     return await CorrompidosCommandHandler.HandleAsync();
 });
 
+var statsCommand = new Command("stats", "Exibe painel completo de estatísticas e saúde do código");
+statsCommand.SetAction(async (parseResult) => await StatsCommandHandler.HandleAsync());
+
 var rootCommand = new RootCommand("Codex Arcanum Thoth - CLI de indexação e diagnóstico de codebase .NET")
 {
     indexarCommand,
     orfaosCommand,
     desatualizadosCommand,
-    corrompidosCommand
+    corrompidosCommand,
+    statsCommand
 };
+
 
 return await rootCommand.Parse(args).InvokeAsync();

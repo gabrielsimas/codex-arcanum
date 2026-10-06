@@ -1,3 +1,5 @@
+using CodexArcanum.Grimoire.Mcp;
+
 var builder = WebApplication.CreateBuilder(args);
 
 const int PORTA_CABALISTICA = 3333;
@@ -54,6 +56,16 @@ builder.Services.AddSingleton<ParameterRepository>();
 builder.Services.AddSingleton<DependencyRepository>();
 builder.Services.AddSingleton<IntegrityService>();
 builder.Services.AddSingleton<IndexingService>();
+
+var isTesting = builder.Environment.EnvironmentName == "Testing" ||
+                AppDomain.CurrentDomain.FriendlyName.Contains("testhost");
+
+if (!isTesting)
+{
+    builder.Services.AddMcpServer()
+    .WithStdioServerTransport()
+    .WithTools<CodexArcanumTools>();
+}
 
 var app = builder.Build();
 

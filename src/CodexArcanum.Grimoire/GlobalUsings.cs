@@ -1,5 +1,8 @@
 global using System.Text.Json;
+global using ModelContextProtocol;
+global using System.ComponentModel;
 global using Microsoft.AspNetCore.Mvc;
+global using ModelContextProtocol.Server;
 global using CodexArcanum.Grimoire.Models;
 global using CodexArcanum.Smaragdus.Storage;
 global using CodexArcanum.Smaragdus.Parsing;
