@@ -82,4 +82,17 @@ public class SymbolRepositoryTests
         var result = _symbolRepo.GetById(999);
         Assert.Null(result);
     }
+
+    [Fact]
+    public void Search_ShouldNotReturnFuzzyMatches_WhenFuzzyDisabled()
+    {
+        var projectId = _projectRepo.Insert(new ProjectModel(0, "TestProj", $"src/{Guid.NewGuid()}.csproj", DateTime.UtcNow.ToString("O")));
+        var fileId = _fileRepo.Insert(new FileModel(0, projectId, "src/Test.cs", DateTime.UtcNow.ToString("O"), 1024, "hash123", DateTime.UtcNow.ToString("O"), 0, "Success"));
+
+        _symbolRepo.Insert(new SymbolModel(0, fileId, "UserService", "Class", "MyApp.Services.UserService", null, 10, 50, null, null, null, false));
+
+        // Busca por "Usre" sem fuzzy deve falhar
+        var results = _symbolRepo.Search("Usre", null, 10, 0, fuzzy: false);
+        Assert.Empty(results);
+    }
 }

@@ -32,9 +32,10 @@ public class SymbolRepository
         return Convert.ToInt32(cmd.ExecuteScalar());
     }
 
-    public List<SymbolSearchResultModel> Search(string query, string? type, int limit, int offset)
+    public List<SymbolSearchResultModel> Search(string query, string? type, int limit, int offset, bool fuzzy = false)
     {
         using var cmd = _connection.CreateCommand();
+
         cmd.CommandText = @"
             SELECT
                 s.Id AS symbolId,
@@ -45,7 +46,8 @@ public class SymbolRepository
                 f.FileSize,
                 s.LineStart,
                 s.LineEnd,
-                s.XmlDoc AS xmlDocSummary
+                s.XmlDoc AS xmlDocSummary,
+                s.Name
             FROM Symbols s
             INNER JOIN Files f ON s.FileId = f.Id
             WHERE (s.Name LIKE @query OR s.FullName LIKE @query)
@@ -66,14 +68,15 @@ public class SymbolRepository
                 reader.GetInt32(0),
                 reader.GetString(1),
                 reader.GetString(2),
-                reader.GetString(3),
-                reader.GetString(4),
-                reader.GetInt64(5),
+                reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
+                reader.IsDBNull(4) ? DateTime.UtcNow.ToString("O") : reader.GetString(4),
+                reader.IsDBNull(5) ? 0L : reader.GetInt64(5),
                 reader.GetInt32(6),
                 reader.GetInt32(7),
                 reader.IsDBNull(8) ? null : reader.GetString(8)
             ));
         }
+
         return results;
     }
 
@@ -117,8 +120,11 @@ public class SymbolRepository
             results.Add(new SymbolModel(
                 reader.GetInt32(0), reader.GetInt32(1), reader.GetString(2), reader.GetString(3),
                 reader.GetString(4), reader.IsDBNull(5) ? null : reader.GetString(5),
-                reader.GetInt32(6), reader.GetInt32(7), reader.GetString(8), reader.GetString(9),
-                reader.IsDBNull(10) ? null : reader.GetString(10), reader.GetBoolean(11)
+                reader.GetInt32(6), reader.GetInt32(7),
+                reader.IsDBNull(8) ? null : reader.GetString(8),
+                reader.IsDBNull(9) ? null : reader.GetString(9),
+                reader.IsDBNull(10) ? null : reader.GetString(10),
+                reader.GetInt32(11) == 1
             ));
         }
         return results;

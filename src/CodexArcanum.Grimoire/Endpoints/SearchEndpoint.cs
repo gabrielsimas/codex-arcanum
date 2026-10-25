@@ -10,7 +10,8 @@ public static class SearchEndpoint
             [FromServices] string solutionRoot,
             [FromServices] SymbolRepository symbolRepo,
             int limit = 100,
-            int offset = 0) =>
+            int offset = 0,
+            bool fuzzy = false) =>
         {
             // 1. Validação básica
             if (string.IsNullOrWhiteSpace(query))
@@ -29,7 +30,7 @@ public static class SearchEndpoint
             if (offset < 0) offset = 0;
 
             // 3. Consulta ao Smaragdus
-            var results = symbolRepo.Search(query, type, limit, offset);
+            var results = symbolRepo.Search(query, type, limit, offset, fuzzy);
 
             // 4. Enriquecer com isStale (custo zero: comparação de metadata com disco)
             var responseItems = results.Select(r =>
