@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CodexArcanum.Grimoire/CodexArcanum.Grimoire.csproj" />
+    <Project Path="src/CodexArcanum.Smaragdus/CodexArcanum.Smaragdus.csproj" />
+    <Project Path="src/CodexArcanum.Thoth/CodexArcanum.Thoth.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CodexArcanum.Grimoire.Tests/CodexArcanum.Grimoire.Tests.csproj" />
+    <Project Path="tests/CodexArcanum.Smaragdus.Tests/CodexArcanum.Smaragdus.Tests.csproj" />
+  </Folder>
+</Solution>
