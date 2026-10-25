@@ -57,8 +57,8 @@ TestResult.xml
 nunit-*.xml
 # extensao_memoria.md
 # AGENTS.md
-.specs/00-ideias/contratos.md
-.specs/01-sdd/01-especificar.md
-.specs/01-sdd/02-planejar.md
-.specs/01-sdd/03-implementar.md
-.specs/01-sdd/04-validar.md
+#.specs/00-ideias/contratos.md
+#.specs/01-sdd/01-especificar.md
+#.specs/01-sdd/02-planejar.md
+#.specs/01-sdd/03-implementar.md
+#.specs/01-sdd/04-validar.md
